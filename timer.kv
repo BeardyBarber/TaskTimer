@@ -1,0 +1,61 @@
+#:kivy 1.9.1
+
+<RootWidget>:
+	id: rootWidget
+    orientation: 'vertical'
+    
+    BoxLayout:
+        size_hint: None, None
+    	size: root.width, 40
+        id: box
+        padding: 5
+        
+		CheckBox:
+			id: repeatable
+			size_hint_x: .1
+			background_checkbox_down: 'images/refresh.png'
+			background_checkbox_normal: 'images/norefresh.png'
+			
+        TextInput:
+            id: new_task
+            size_hint_x: .6
+            
+        Button:
+            text: 'add'
+            on_press: root.add_task(new_task.text, repeatable.active)
+            size_hint_x: .3
+            
+            
+<TaskTimerWidget>:
+	padding: 10, 10
+	spacing: 5
+	id: taskT
+    on_seconds: time.text = self.format(self.seconds)
+    
+    CheckBox:
+    	size_hint_x: .1
+    	disabled: True
+    	background_checkbox_disabled_down: 'images/refresh.png'
+    	background_checkbox_disabled_normal: 'images/norefresh.png'
+    	active: root.isRepeatableFlag
+    	
+    Label:
+        text: root.label
+        font_size: 20
+        size_hint_x: 0.86
+        
+    Label:
+        text: '00:00:00'
+        font_size: 20
+        size_hint_x: 0.86
+        
+    Button:
+        text: 'START'
+        on_press: self.parent.parent.stop_all()
+        on_release: root.start()
+        size_hint_x: 0.16
+        
+    Button:
+        text: 'DONE'
+        on_press: root.remove_widget(startButton), root.remove_widget(done), root.stop()
+        size_hint_x: 0.16
