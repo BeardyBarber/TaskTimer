@@ -29,13 +29,15 @@ class RootWidget(BoxLayout):
             self.ids.repeatable.active = False
 
     def stop_all(self):
+        """Stops all tasks."""
         for child in self.children:
             if(type(child) == TaskTimerWidget):
                 Clock.unschedule(child.update)
 
     def pickle_all(self):
+        """Creates JSON file with all tasks."""
         file = open(os.path.join(
-            os.path.dirname(__file__), time.strftime('%d_%m_%Y') + '.txt'), 'w')
+            os.path.dirname(__file__), time.strftime('%d_%m_%Y') + '.json'), 'w')
         data = []
         for child in self.children:
             if(type(child) == TaskTimerWidget):
@@ -86,9 +88,18 @@ class TimerApp(App):
 
     def on_start(self):
         App.on_start(self)
+        self.findLatestAndParse()
+
+    def on_stop(self):
+        App.on_stop(self)
+        self.root.pickle_all()
+
+    def __findLatestFileAndParse(self):
+        """Finds latest modified *.json file and parse it to tasks."""
         try:
+            # find latest modified JSON file in program residence directory
             latestFile = max(
-                glob.iglob(os.path.dirname(__file__) + '/*.[tT][xX][tT]'), key=os.path.getctime)
+                glob.iglob(os.path.dirname(__file__) + '/*.[jJ][sS][oO][nN]'), key=os.path.getctime)
             inputTasks = open(
                 os.path.join(os.path.dirname(__file__), latestFile), 'r')
         except (IOError, ValueError):
@@ -101,10 +112,6 @@ class TimerApp(App):
                     self.root.add_task(
                         item_dict['label'], bool(item_dict['isRepeatable']))
             inputTasks.close()
-
-    def on_stop(self):
-        App.on_stop(self)
-        self.root.pickle_all()
 
 if __name__ == "__main__":
     TimerApp().run()
