@@ -16,14 +16,14 @@ class RootWidget(BoxLayout):
     def __init__(self, **kwargs):
         super(RootWidget, self).__init__(**kwargs)
 
-    def add_task(self, labelText, isRepeatable):
+    def add_task(self, label_text, is_repeatable):
         try:
-            if labelText == '':
+            if label_text == '':
                 raise ValueError('Cannot create task from empty String!')
         except ValueError as e:
             print(e)
         else:
-            task = TaskTimerWidget(labelText, isRepeatable)
+            task = TaskTimerWidget(label_text, is_repeatable)
             self.add_widget(task)
             self.ids.new_task.text = ''
             self.ids.repeatable.active = False
@@ -34,50 +34,45 @@ class RootWidget(BoxLayout):
             if(type(child) == TaskTimerWidget):
                 Clock.unschedule(child.update)
 
-    def pickle_all(self):
-        """Creates JSON file with all tasks."""
-        file = open(os.path.join(
-            os.path.dirname(__file__), time.strftime('%d_%m_%Y') + '.json'), 'w')
+    def get_tasks(self):
+        """Creates and return dict with all tasks."""
         data = []
         for child in self.children:
             if(type(child) == TaskTimerWidget):
                 data.append(str(child))
-        json.dump(data, file, indent=4, separators=(',', ': '))
-        file.close()
+        return data
 
 
 class TaskTimerWidget(BoxLayout):
     seconds = NumericProperty(0)
     label = StringProperty('')
-    isRepeatableFlag = BooleanProperty(False)
-    isDoneFlag = BooleanProperty(False)
+    is_repeatable_flag = BooleanProperty(False)
+    is_done_flag = BooleanProperty(False)
+
+    def __str__(self):
+        return str({"time": self.seconds, "label": self.label, "is_repeatable": self.is_repeatable_flag, "is_done": self.is_done_flag})
+
+    def __init__(self, label_text, is_repeatable, **kwargs):
+        super(TaskTimerWidget, self).__init__(**kwargs)
+        self.label = label_text
+        self.is_repeatable_flag = is_repeatable
+        self.is_done_flag = False
 
     def update(self, dt):
         self.seconds += dt
 
     def stop(self):
         Clock.unschedule(self.update)
-        self.isDoneFlag = True
-        print(self)
+        self.is_done_flag = True
 
     def start(self):
         Clock.schedule_interval(self.update, .016)
-        print(self)
 
     @staticmethod
     def format(sec):
         m, s = divmod(sec, 60)
         h, m = divmod(m, 60)
         return "%02d:%02d:%02d" % (h, m, s)
-
-    def __str__(self):
-        return str({"time": self.seconds, "label": self.label, "isRepeatable": self.isRepeatableFlag, "isDone": self.isDoneFlag})
-
-    def __init__(self, labelText, isRepeatable, **kwargs):
-        super(TaskTimerWidget, self).__init__(**kwargs)
-        self.label = labelText
-        self.isRepeatableFlag = isRepeatable
-        self.isDoneFlag = False
 
 
 class TimerApp(App):
@@ -88,30 +83,37 @@ class TimerApp(App):
 
     def on_start(self):
         App.on_start(self)
-        self.findLatestAndParse()
+        self.__import_tasks(self.__find_latest_file())
 
     def on_stop(self):
         App.on_stop(self)
-        self.root.pickle_all()
+        self.__pickle_tasks(self.root.get_tasks())
 
-    def __findLatestFileAndParse(self):
-        """Finds latest modified *.json file and parse it to tasks."""
-        try:
-            # find latest modified JSON file in program residence directory
-            latestFile = max(
-                glob.iglob(os.path.dirname(__file__) + '/*.[jJ][sS][oO][nN]'), key=os.path.getctime)
-            inputTasks = open(
-                os.path.join(os.path.dirname(__file__), latestFile), 'r')
-        except (IOError, ValueError):
-            print("No *.TXT file in directory. Starting without import...")
-        else:
-            dataFromJson = json.load(inputTasks, encoding='UTF8')
-            for item in dataFromJson:
+    def __find_latest_file(self):
+        """Finds latest modified *.json file and returns it as String"""
+        # find latest modified JSON file in program residence directory
+        latest_file = max(
+            glob.iglob(os.path.dirname(__file__) + '/*.[jJ][sS][oO][nN]'), key=os.path.getctime)
+        if not os.path.isfile(latest_file):
+            raise IOError('Cannot find a file!')
+        input_tasks = open(
+            os.path.join(os.path.dirname(__file__), latest_file), 'r')
+        return input_tasks.read()
+
+    def __import_tasks(self, data):
+        if data:
+            data_from_json = json.load(data)
+            for item in data_from_json:
                 item_dict = ast.literal_eval(item)
-                if not(item_dict['isDone']) or (item_dict['isRepeatable']):
+                if not(item_dict['is_done']) or (item_dict['is_repeatable']):
                     self.root.add_task(
-                        item_dict['label'], bool(item_dict['isRepeatable']))
-            inputTasks.close()
+                        item_dict['label'], bool(item_dict['is_repeatable']))
+
+    def __pickle_tasks(self, data):
+        file = open(os.path.join(
+            os.path.dirname(__file__), time.strftime('%d_%m_%Y') + '.json'), 'w')
+        json.dump(data, file, indent=4, separators=(',', ': '))
+        file.close()
 
 if __name__ == "__main__":
     TimerApp().run()

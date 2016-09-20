@@ -1,7 +1,7 @@
 #:kivy 1.9.1
 
 <RootWidget>:
-	id: rootWidget
+	id: root_widget
     orientation: 'vertical'
     
     BoxLayout:
@@ -37,7 +37,7 @@
     	disabled: True
     	background_checkbox_disabled_down: 'images/refresh.png'
     	background_checkbox_disabled_normal: 'images/norefresh.png'
-    	active: root.isRepeatableFlag
+    	active: root.is_repeatable_flag
     	
     Label:
         text: root.label
@@ -45,17 +45,20 @@
         size_hint_x: 0.86
         
     Label:
+    	id: time
         text: '00:00:00'
         font_size: 20
         size_hint_x: 0.86
         
     Button:
+    	id: start_button
         text: 'START'
         on_press: self.parent.parent.stop_all()
         on_release: root.start()
         size_hint_x: 0.16
         
     Button:
+    	id: done
         text: 'DONE'
-        on_press: root.remove_widget(startButton), root.remove_widget(done), root.stop()
+        on_press: root.remove_widget(start_button), root.remove_widget(done), root.stop()
         size_hint_x: 0.16
